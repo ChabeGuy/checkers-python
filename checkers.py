@@ -1,5 +1,6 @@
 import colorama
 columnsLetters = {"a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7}
+colorama.init(autoreset=True)
 
 # The class for the game pieces. Contains board side,
 # promotion status, coloring, and symbol.
@@ -7,7 +8,7 @@ class Piece():
     def __init__(self, side):
         self.side = side
         self.pms = False
-        self.color = colorama.Fore.RED if side == "red" else colorama.Fore.BLUE
+        self.color = colorama.Fore.RED if side == "red" else colorama.Fore.LIGHTBLUE_EX
         self.bg = colorama.Back.BLACK
         self.symbol = "O"
 
@@ -45,7 +46,7 @@ def display_board(board = board):
                 else:
                     currentTile.color = colorama.Fore.WHITE
         offset += 1
-        print(f"{row + 1} " + " ".join([f"{x.color}{x.bg}{x.symbol}{colorama.Fore.BLACK}{colorama.Back.BLACK}" for x in board[row]]))
+        print(f"{row + 1} " + " ".join([f"{x.color}{x.bg}{x.symbol}" for x in board[row]]) + f"{board[row][-1].bg} ")
 
 def move_piece(startx, starty, destx, desty, board = board):
     board[desty][destx] = board[starty][startx]
@@ -73,6 +74,7 @@ def check_jump(piecex, piecey, udDir, board = board):
                         if board[piecey+ud][piecex+lr].side == turn: continue
                         columnLetter = next(i for i in columnsLetters if columnsLetters[i] == (piecex + lr))
                         while True:
+                            display_board()
                             jumpChoice = input(f"Would you like to jump the piece at {piecey+1+ud}{columnLetter}? ").lower()
                             if jumpChoice == "yes":
                                 jump_piece(piecex, piecey, (piecex + lr), (piecey + ud), ud, lr)
@@ -162,7 +164,7 @@ def take_turn():
                 udDir = -1
             else:
                 while True:
-                    chooseDir = input("Move up or down?").lower()
+                    chooseDir = input("Move up or down? ").lower()
                     if chooseDir == "up":
                         udDir = -1
                     elif chooseDir == "down":
@@ -193,9 +195,9 @@ def take_turn():
             # Checks if there's a piece to jump over.
             if not isinstance(board[chosenRow + udDir][chosenColumn + lrDir], Space):
                 if board[chosenRow + udDir][chosenColumn + lrDir].side != turn and isinstance(board[chosenRow + (2 * udDir)][chosenColumn + (2 * lrDir)], Space):
-                    if turn == "blue" and not board[chosenRow][chosenColumn].pms and chosenRow != 1:
+                    if turn == "blue" and chosenRow != 1:
                         movementType = "jump"
-                    elif turn == "red" and not board[chosenRow][chosenColumn].pms and chosenRow != 6:
+                    elif turn == "red" and chosenRow != 6:
                         movementType = "jump"
                     else:
                         print("You can't move in that direction!")
@@ -236,19 +238,20 @@ turn = "blue"
 # Main gameplay loop.
 try:
     while True:
-        turnColor = colorama.Fore.BLUE if turn == "blue" else colorama.Fore.RED
-        print(f"{turnColor}{turn[0].upper()}{turn[1:]}'s turn!{colorama.Fore.BLACK}")
+        turnColor = colorama.Fore.LIGHTBLUE_EX if turn == "blue" else colorama.Fore.RED
+        print(f"{turnColor}{turn[0].upper()}{turn[1:]}'s turn!")
         display_board(board)
         take_turn()
-        if check_win:
+        if check_win():
             break
         if turn == "red":
             turn = "blue"
         else:
             turn = "red"
+    print(f"{turnColor}{turn[0].upper()}{turn[1:]} wins!")
 except KeyboardInterrupt:
     print("Game cancelled.")
 
-print(f"{turnColor}{turn[0].upper()}{turn[1:]} wins!{colorama.Fore.BLACK}")
+
 
 
