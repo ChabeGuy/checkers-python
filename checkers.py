@@ -76,13 +76,13 @@ def check_jump(piecex, piecey, udDir, board = board):
                         while True:
                             display_board()
                             jumpChoice = input(f"Would you like to jump the piece at {piecey+1+ud}{columnLetter}? ").lower()
-                            if jumpChoice == "yes":
+                            if jumpChoice == "yes" or jumpChoice == "y":
                                 jump_piece(piecex, piecey, (piecex + lr), (piecey + ud), ud, lr)
                                 jumped = True
                                 piecex += (2*lr)
                                 piecey += (2*ud)
                                 break
-                            elif jumpChoice == "no":
+                            elif jumpChoice == "no" or jumpChoice == "n":
                                 break
                             else:
                                 print("Please choose yes or no.")    
@@ -94,24 +94,27 @@ def check_jump(piecex, piecey, udDir, board = board):
             for lr in range(-1, 2, 2):
                 if piecex <= 1 and lr == -1: continue
                 elif piecex >= 6 and lr == 1: continue
-                if isinstance(board[piecey + udDir][piecex + lr], Piece) and isinstance(board[piecey + (2*udDir)][piecex + (2*lr)], Space):
-                    if board[piecey+udDir][piecex+lr].side == turn: continue
-                    columnLetter = next(i for i in columnsLetters if columnsLetters[i] == (piecex + lr))
-                    while True:
-                        display_board(board)
-                        jumpChoice = input(f"Would you like to jump the piece at {piecey+1+udDir}{columnLetter}? ").lower()
-                        if jumpChoice == "yes":
-                            jump_piece(piecex, piecey, (piecex + lr), (piecey + udDir), udDir, lr)
-                            jumped = True
-                            piecex += (2*lr)
-                            piecey += (2*udDir)
+                try:
+                    if isinstance(board[piecey + udDir][piecex + lr], Piece) and isinstance(board[piecey + (2*udDir)][piecex + (2*lr)], Space):
+                        if board[piecey+udDir][piecex+lr].side == turn: continue
+                        columnLetter = next(i for i in columnsLetters if columnsLetters[i] == (piecex + lr))
+                        while True:
+                            display_board(board)
+                            jumpChoice = input(f"Would you like to jump the piece at {piecey+1+udDir}{columnLetter}? ").lower()
+                            if jumpChoice == "yes" or jumpChoice == "y":
+                                jump_piece(piecex, piecey, (piecex + lr), (piecey + udDir), udDir, lr)
+                                jumped = True
+                                piecex += (2*lr)
+                                piecey += (2*udDir)
+                                break
+                            elif jumpChoice == "no" or jumpChoice == "n":
+                                break
+                            else:
+                                print("Please choose yes or no.")
+                        if jumped:
                             break
-                        elif jumpChoice == "no":
-                            break
-                        else:
-                            print("Please choose yes or no.")
-                    if jumped:
-                        break
+                except IndexError:
+                    continue
         if not jumped:
             break
 
@@ -129,6 +132,12 @@ def take_turn():
         while True:
             while True:
                 try:
+                    chosenColumn = columnsLetters[input("Column: ")]
+                    break
+                except KeyError:
+                    print("Input a valid column.")
+            while True:
+                try:
                     chosenRow = int(input("Row: "))
                     if chosenRow > 8 or chosenRow < 1:
                         print("Input a valid row.")
@@ -137,12 +146,6 @@ def take_turn():
                         break
                 except ValueError:
                     print("Input a valid row.")
-            while True:
-                try:
-                    chosenColumn = columnsLetters[input("Column: ")]
-                    break
-                except KeyError:
-                    print("Input a valid column.")
             if isinstance(board[chosenRow][chosenColumn], Piece): 
                 if board[chosenRow][chosenColumn].side == turn: 
                     break
@@ -151,9 +154,6 @@ def take_turn():
             else:
                 print("Please choose a valid piece.")
         chosenPiece = board[chosenRow][chosenColumn]
-        # Checks whether the player can move left and/or right.
-        forcedLeft = True if chosenColumn == 7 else False
-        forcedRight = True if chosenColumn == 0 else False
         # Determines up/down movement direction
         if not chosenPiece.pms:
             udDir = -1 if turn == "blue" else 1
@@ -165,14 +165,32 @@ def take_turn():
             else:
                 while True:
                     chooseDir = input("Move up or down? ").lower()
-                    if chooseDir == "up":
+                    if chooseDir == "up" or chooseDir == "u":
                         udDir = -1
-                    elif chooseDir == "down":
+                    elif chooseDir == "down" or chooseDir == "d":
                         udDir  = 1
                     else:
                         print("Choose a valid direction.")
                         continue
                     break
+        # Checks whether the player can move left and/or right.
+        try:
+            isMyPieceRight = (isinstance(board[chosenRow + udDir][chosenColumn + 1], Piece) and board[chosenRow + udDir][chosenColumn + 1].side == turn)
+            twoEnemiesRight = (isinstance(board[chosenRow + udDir][chosenColumn + 1], Piece) and isinstance(board[chosenRow + (2*udDir)][chosenColumn + 2], Piece))
+        except IndexError:
+            isMyPieceRight = True
+            twoEnemiesRight = True
+        isMyPieceLeft = (isinstance(board[chosenRow+udDir][chosenColumn - 1], Piece) and board[chosenRow + udDir][chosenColumn - 1].side == turn)
+        twoEnemiesLeft = (isinstance(board[chosenRow + udDir][chosenColumn - 1], Piece) and (isinstance(board[chosenRow + (2*udDir)][chosenColumn - 2], Piece) or chosenColumn == 1))
+        if chosenColumn == 7 or isMyPieceRight or twoEnemiesRight:
+            forcedLeft = True
+        else: forcedLeft = False
+        if chosenColumn == 0 or isMyPieceLeft or twoEnemiesLeft:
+            forcedRight = True
+        else: forcedRight = False
+        if forcedRight and forcedLeft:
+            print("You can't move that piece!")
+            continue
         # Determines left/right movement direction and movement type
         lrDir = 0
         movementType = "move"
@@ -185,9 +203,9 @@ def take_turn():
             # If neither direction is blocked, asks for input
             else:
                 moveChoice = input("Left or right? ").lower() 
-                if moveChoice == "left":
+                if moveChoice == "left" or moveChoice == "l":
                     lrDir = -1
-                elif moveChoice == "right":
+                elif moveChoice == "right" or moveChoice == "r":
                     lrDir = 1
                 else:
                     print("Choose a valid direction.")
@@ -248,10 +266,20 @@ try:
             turn = "blue"
         else:
             turn = "red"
+    display_board()
     print(f"{turnColor}{turn[0].upper()}{turn[1:]} wins!")
 except KeyboardInterrupt:
-    print("Game cancelled.")
-
-
-
-
+    redCount = 0
+    blueCount = 0
+    for row in board:
+        for space in row:
+            if isinstance(space, Piece):
+                if space.side == "blue": blueCount += 1 
+                else: redCount += 1
+    print()
+    if blueCount > redCount:
+        print(f"{colorama.Fore.LIGHTBLUE_EX}Blue wins!")
+    elif blueCount < redCount:
+        print(f"{colorama.Fore.RED}Red wins!")
+    else:
+        print("It's a tie!")
